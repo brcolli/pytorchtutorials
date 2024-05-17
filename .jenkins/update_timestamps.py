@@ -63,7 +63,8 @@ def update_timestamp(file_path: str):
     else:
         # If author line is not found, add timestamp to the last line
         updated_lines = lines
-        updated_lines.append(f'# {timestamp_line}')
+        if file_path.endswith('.rst'): updated_lines.append(timestamp_line)
+        else: updated_lines.append(f'# {timestamp_line}')
     
     # Write updated lines back to file
     with open(file_path, 'w') as file:
