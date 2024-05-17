@@ -1,5 +1,6 @@
 import re
 import sys
+import os
 import subprocess
 
 def get_last_commit_timestamp_for_file(file_path: str) -> str:
@@ -13,6 +14,11 @@ def get_last_commit_timestamp_for_file(file_path: str) -> str:
     """
     git_command = ["git", "log", "-1", "--format=%at", "--", file_path]
     timestamp = subprocess.check_output(git_command).decode().strip()
+
+    if not timestamp:
+        # If there is no git commit history, use last modified date
+        timestamp = str(int(os.path.getmtime(file_path)))
+
     date_command = ["date", "-d", "@" + timestamp, "+%I:%M %p, %B %d, %Y"]
     return subprocess.check_output(date_command).decode().strip()
 
@@ -40,6 +46,10 @@ def update_timestamp(file_path: str):
     # If author line is found, add timestamp below it
     if author_line_index != -1:
         
+        if lines[author_line_index].startswith('#'):
+            # We can assume we need a #, too
+            timestamp_line = '# ' + timestamp_line
+            
         updated_lines = lines[:author_line_index + 1]
         # Check if the timestamp line exists below the author line or if there are only blank lines between them
         if author_line_index + 1 < len(lines) and (lines[author_line_index + 1].strip() == '' or re.search(r'Updated:\s*\*\*\d{1,2}:\d{2} [AP]M, \w+ \d{1,2}, \d{4}\*\*', lines[author_line_index + 1])):
@@ -64,7 +74,7 @@ def update_timestamp(file_path: str):
         # If author line is not found, add timestamp to the last line
         updated_lines = lines
         if file_path.endswith('.rst'): updated_lines.append(timestamp_line)
-        else: updated_lines.append(f'# {timestamp_line}')
+        else: updated_lines.append(f'\n\n# {timestamp_line}')
     
     # Write updated lines back to file
     with open(file_path, 'w') as file:
