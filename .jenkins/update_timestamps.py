@@ -25,7 +25,6 @@ def update_timestamp(file_path: str):
     with open(file_path, 'r') as file:
         lines = file.readlines()
 
-    updated_lines = []
     author_line_index = -1
 
     # Find the index of the author line and extract author's name and GitHub link
@@ -40,14 +39,24 @@ def update_timestamp(file_path: str):
 
     # If author line is found, add timestamp below it
     if author_line_index != -1:
+        
+        updated_lines = lines[:author_line_index + 1]
         # Check if the timestamp line exists below the author line or if there are only blank lines between them
         if author_line_index + 1 < len(lines) and (lines[author_line_index + 1].strip() == '' or re.search(r'Updated:\s*\*\*\d{1,2}:\d{2} [AP]M, \w+ \d{1,2}, \d{4}\*\*', lines[author_line_index + 1])):
             # If timestamp line exists or there are only blank lines, update it
-            for i, line in enumerate(lines):
-                if re.search(r'Updated:\s*\*\*\d{1,2}:\d{2} [AP]M, \w+ \d{1,2}, \d{4}\*\*', line):
-                    updated_lines.append(timestamp_line)
-                else:
-                    updated_lines.append(line)
+            i = author_line_index + 1
+            while i < len(lines) and lines[i].strip() == '':
+                # Find first non-empty line after Author
+                updated_lines.append(lines[i])
+                i += 1
+
+            if re.search(r'Updated:\s*\*\*\d{1,2}:\d{2} [AP]M, \w+ \d{1,2}, \d{4}\*\*', lines[i]):
+                updated_lines.append(timestamp_line)
+            else:
+                updated_lines[author_line_index + 1] = timestamp_line
+                if i == author_line_index + 2: updated_lines.append('\n')
+
+            updated_lines.extend(lines[i:])
         else:
             # If timestamp line does not exist and there are no blank lines, add it below author line
             updated_lines = lines[:author_line_index + 1] + [timestamp_line, '\n'] + lines[author_line_index + 1:]
